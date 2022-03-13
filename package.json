@@ -1,6 +1,6 @@
 {
   "name": "@7polo/mindmap-vue",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "main": "./dist/mindmap-vue.es.js",
   "scripts": {
     "mindmap-vue-dev": "vite",
@@ -8,7 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@7polo/mindmap": "^1.0.7",
+    "@7polo/mindmap": "^1.0.8",
     "nanoid": "^3.1.22",
     "vue": "^3.2.25"
   },
