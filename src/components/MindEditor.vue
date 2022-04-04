@@ -1,11 +1,13 @@
 <template>
   <div class="mind-editor-container">
     <div class="mind-editor" :id="editor.id"></div>
+    <Toolbar @select="onToolSelect"/>
   </div>
 </template>
 <script>
 import {defineComponent, nextTick, onMounted, ref, watch} from 'vue';
 import MinderEditor from '@7polo/mindmap'
+import Toolbar from "./tools/Toolbar";
 
 const deepCopy = function (data) {
   return JSON.parse(JSON.stringify(data))
@@ -19,6 +21,7 @@ const STATE = {
 }
 
 export default defineComponent({
+  components: {Toolbar},
   props: {
     mind: {
       type: Object,
@@ -31,6 +34,13 @@ export default defineComponent({
           template: 'default',
           theme: 'classic'
         }
+      }
+    },
+    locale: {
+      type: Object,
+      required: false,
+      default: ()=> {
+        return {}
       }
     }
   },
@@ -58,7 +68,7 @@ export default defineComponent({
       editor.ref.onEvent('selectionchange', function () {
         const node = editor.ref.getMinder().getSelectedNode();
         if (node) {
-          emit('selectionchange', node)
+          emit('select-change', node)
         }
       });
 
@@ -71,22 +81,26 @@ export default defineComponent({
       });
     }
 
-    const renderMind = () => {
+    const renderMind = (json) => {
       editor.ref = new MinderEditor(`#${editor.id}`);
       bindEvent()
+      if (json) {
+        importJson(json)
+      }
+      editor.ref.execCommand('ResetLayout');
     }
 
     const importJson = (mind) => {
       state.value = STATE.LOADING
       editor.ref.import(deepCopy(mind))
       state.value = STATE.READY
+      emit('import-finish')
     }
 
     onMounted(() => {
-      nextTick(()=> {
-        renderMind()
-        importJson(props.mind)
-      })
+      setTimeout(() => {
+        renderMind(props.mind)
+      }, 200)
     })
 
     watch(() => props.mind, (data) => {
@@ -112,8 +126,15 @@ export default defineComponent({
       changeConfig('theme', theme)
     })
 
+    const onToolSelect = (tool) => {
+      Object.keys(tool).forEach(key => {
+        changeConfig(key, tool[key])
+      })
+    }
+
     return {
-      editor
+      editor,
+      onToolSelect
     }
   }
 });
