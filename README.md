@@ -24,5 +24,6 @@
 :config="mindConfig"
 @contentChange="onContentchange"
 @configChange="onConfigChange"
+@selectChange="onSelectChange"
 />
 ```

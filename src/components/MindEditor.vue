@@ -1,14 +1,17 @@
 <template>
   <div class="mind-editor-container">
-    <div class="mind-editor" :id="editor.id"></div>
-    <Toolbar @select="onToolSelect"/>
+    <div class="mind-editor" ref="mindRef"></div>
+    <SideToolbar :execCmd='execCmd' :locale="locale"/>
+    <Toolbar :execCmd='execCmd'/>
   </div>
 </template>
 <script>
 import {defineComponent, nextTick, onMounted, ref, watch} from 'vue';
-import MinderEditor from '@7polo/mindmap'
+// import MinderEditor from '@7polo/mindmap'
+import MinderEditor from '../../../mindmap/dist/index'
+import SideToolbar from "./tools/SideToolbar";
 import Toolbar from "./tools/Toolbar";
-
+import {zh_CN} from "./i18n/zh_CN";
 const deepCopy = function (data) {
   return JSON.parse(JSON.stringify(data))
 }
@@ -20,89 +23,92 @@ const STATE = {
   MODIFY: 'MODIFY'
 }
 
+const DEFAULT_MIND = {
+  "template": 'default',
+  "root": {
+    "data": {
+      "text": "新建主题"
+    }
+  }
+}
+
 export default defineComponent({
-  components: {Toolbar},
+  components: {Toolbar, SideToolbar},
   props: {
     mind: {
-      type: Object,
-      required: true
-    },
-    config: { // 百度脑图的其他配置
-      type: Object,
+      type: [Object, null],
+      required: true,
       default: () => {
-        return {
-          template: 'default',
-          theme: 'classic'
-        }
+        return DEFAULT_MIND
       }
     },
     locale: {
-      type: Object,
+      type: Function,
       required: false,
-      default: ()=> {
-        return {}
+      default: (text) => {
+        const array = text.split('.')
+        let v = zh_CN;
+        for (let i = 0; i < array.length; i++) {
+          v = v[array[i]]
+        }
+        return v
       }
     }
   },
   setup(props, {emit}) {
 
+    const mindRef = ref()
+
     const editor = {
-      id: 'mind_editor_' + new Date().getTime(),
       ref: null,
       uuid: 0
     }
 
     const state = ref(STATE.INIT)
 
-    // fix 非内容变化一些场景触发事件
-    let contentChangeSwitcher = true
-
-    const syncMind = () => {
-      const mind = Object.assign({uuid: new Date().getTime()}, editor.ref.getMinder().exportJson())
-      editor.uuid = mind.uuid
-      emit('update:mind', mind)
-      return mind
+    const importJson = (mind) => {
+      if (!editor.ref && mind) {
+        return;
+      }
+      console.log('valid import')
+      state.value = STATE.LOADING
+      editor.ref.import(deepCopy(Object.assign({}, DEFAULT_MIND, mind)))
+      state.value = STATE.READY
+      emit('import-finish')
     }
 
-    const bindEvent = () => {
+    const renderMindEditor = () => {
+      editor.ref = new MinderEditor(mindRef.value);
+
+      // event
       editor.ref.onEvent('selectionchange', function () {
         const node = editor.ref.getMinder().getSelectedNode();
         if (node) {
           emit('select-change', node)
         }
       });
-
       editor.ref.onEvent('contentchange', function (e) {
-        if (state.value !== STATE.LOADING && contentChangeSwitcher) {
-          state.value = STATE.MODIFY
-          const mind = syncMind()
-          emit('content-change', e, mind)
+        if (state.value === STATE.LOADING) {
+          return;
         }
+        console.log("contentchange")
+        const mind = Object.assign({uuid: new Date().getTime()}, editor.ref.getMinder().exportJson())
+        editor.uuid = mind.uuid
+        state.value = STATE.MODIFY
+        emit('update:mind', mind)
+        emit('content-change', e, mind)
       });
     }
 
-    const renderMind = (json) => {
-      editor.ref = new MinderEditor(`#${editor.id}`);
-      bindEvent()
-      if (json) {
-        importJson(json)
-      }
-      editor.ref.execCommand('ResetLayout');
-    }
-
-    const importJson = (mind) => {
-      state.value = STATE.LOADING
-      editor.ref.import(deepCopy(mind))
-      state.value = STATE.READY
-      emit('import-finish')
-    }
-
+    // 渲染
     onMounted(() => {
-      setTimeout(() => {
-        renderMind(props.mind)
-      }, 200)
+      nextTick(()=> {
+        renderMindEditor()
+        importJson(props.mind)
+      })
     })
 
+    // 监听变化
     watch(() => props.mind, (data) => {
       if (data.uuid === editor.uuid) {
         return
@@ -110,31 +116,18 @@ export default defineComponent({
       importJson(data)
     })
 
-    const changeConfig = (config, value) => {
-      contentChangeSwitcher = false
-      editor.ref.execCommand(config, value)
-      contentChangeSwitcher = true
-      syncMind()
-      emit('config-change', config, value)
-    }
-
-    watch(() => props.config.template, (template) => {
-      changeConfig('template', template)
-    })
-
-    watch(() => props.config.theme, (theme) => {
-      changeConfig('theme', theme)
-    })
-
-    const onToolSelect = (tool) => {
-      Object.keys(tool).forEach(key => {
-        changeConfig(key, tool[key])
-      })
+    const execCmd = (cmd, params) => {
+      if (!editor.ref) {
+        return;
+      }
+      editor.ref.execCommand(cmd, params)
     }
 
     return {
       editor,
-      onToolSelect
+      mindRef,
+      locale: props.locale,
+      execCmd
     }
   }
 });
@@ -142,17 +135,13 @@ export default defineComponent({
 
 <style lang="less" scoped>
 .mind-editor-container {
-
+  box-sizing: content-box;
   position: relative;
   width: 100%;
   height: 100%;
 
   .mind-editor {
-    right: 0;
-    position: absolute;
-    bottom: 0;
     height: 100%;
-    width: 100%;
   }
 }
 </style>

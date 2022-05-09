@@ -1,9 +1,9 @@
 <template>
   <div style="height: 700px; margin-top: 60px">
-    <mind-editor v-model:mind="mind"
+    <mind-editor v-model:mind="mind2"
                  @mind-click="onClick"
                  :config="mindConfig"
-                 @contentChange="onContentchange"
+                 @contentChange="onContentChange"
                  @configChange="onConfigChange"
     />
     <button @click="change">切换</button>
@@ -22,13 +22,27 @@ export default defineComponent({
   setup() {
 
     const mind = ref({
-      "template": 'default',
       "root": {
-        "data": {
-          "text": "账号"
-        }
-      }
+        "data": {"id": "033de3748e51", "created": 1624501231, "text": "框架"},
+        "children": [{
+          "data": {"id": "ccbhoib45o00", "created": 1624501386373, "text": "MongoDB"},
+          "children": []
+        }, {
+          "data": {
+            "id": "cj5negbpyow0",
+            "created": 1649501274415,
+            "text": " ",
+            "image": "https://img-blog.csdnimg.cn/20190311133729340.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzMzNzQ1MTAy,size_16,color_FFFFFF,t_70",
+            "imageTitle": "",
+            "imageSize": {"width": 200, "height": 96}
+          }, "children": []
+        }]
+      }, "template": "right",
+      "theme": "fresh-blue",
+      "version": "1.4.43"
     })
+
+    const mind2 = ref({})
 
     const change = () => {
       mind.value = {
@@ -110,8 +124,8 @@ export default defineComponent({
       console.log(e)
     }
 
-    const onContentchange = (e) => {
-      console.log(e)
+    const onContentChange = (e, content) => {
+      console.log(content)
     }
 
     const onConfigChange = (config, value) => {
@@ -137,10 +151,11 @@ export default defineComponent({
 
     return {
       mind,
+      mind2,
       mindConfig,
       change,
       onClick,
-      onContentchange,
+      onContentChange,
       onConfigChange,
 
       changeTheme,

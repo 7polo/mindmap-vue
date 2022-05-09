@@ -1,10 +1,9 @@
 import {defineConfig} from 'vite';
 import vue from '@vitejs/plugin-vue';
-import path from "path";
+import path from 'path';
+import svgLoader from 'vite-svg-loader';
 
-const pathResolve = (pathStr) => {
-    return path.resolve(__dirname, pathStr);
-};
+const pathResolve = (pathStr) => path.resolve(__dirname, pathStr);
 
 export default defineConfig({
     build: {
@@ -47,7 +46,8 @@ export default defineConfig({
         ]
     },
     plugins: [
-        vue()
+        vue(),
+        svgLoader()
     ],
     css: {
         postcss: {},
@@ -57,4 +57,4 @@ export default defineConfig({
             }
         }
     }
-})
+});
